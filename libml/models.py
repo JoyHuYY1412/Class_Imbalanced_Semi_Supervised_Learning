@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -217,6 +217,6 @@ class MultiModel(CNN13, Res18, ResNet, ShakeNet):
         raise ValueError('Model %s does not exists, available ones are %s' % (arch, self.MODELS))
 
 
-# flags.DEFINE_enum('arch', MultiModel.MODEL_RESNET, MultiModel.MODELS, 'Architecture.')
+flags.DEFINE_enum('arch', MultiModel.MODEL_RESNET, MultiModel.MODELS, 'Architecture.')
 # flags.DEFINE_enum('arch', MultiModel.MODEL_CNN13, MultiModel.MODELS, 'Architecture.')
-flags.DEFINE_enum('arch', MultiModel.MODEL_RES18, MultiModel.MODELS, 'Architecture.')
+# flags.DEFINE_enum('arch', MultiModel.MODEL_RES18, MultiModel.MODELS, 'Architecture.')

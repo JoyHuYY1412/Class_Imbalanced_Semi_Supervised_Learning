@@ -1,5 +1,3 @@
-# Copyright 2019 Google LLC
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -72,7 +70,6 @@ class MixMatch(models.MultiModel):
         x_in = tf.placeholder(tf.float32, [None] + hwc, 'x')
         y_in = tf.placeholder(tf.float32, [batch, nu] + hwc, 'y')
         l_in = tf.placeholder(tf.int32, [batch], 'labels')
-        p_in = tf.placeholder(tf.float32, self.dataset.nclass, 'p_cls_ema')  # Labels
 
         w_match *= tf.clip_by_value(tf.cast(self.step, tf.float32) / (warmup_kimg << 10), 0, 1)
         lrate = tf.clip_by_value(tf.to_float(self.step) / (FLAGS.train_kimg << 10), 0, 1)
@@ -107,16 +104,8 @@ class MixMatch(models.MultiModel):
         logits_x = logits[0]
         logits_y = tf.concat(logits[1:], 0)
 
-        if (FLAGS.weight_l_ce == 0):
-            loss_xe = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels_x, logits=logits_x)
-            update_p = tf.add(p_in, 0)
-        elif FLAGS.weight_l_ce == 4:
-            loss_xe, p_each_cls = weighted_ce_loss(output_lb=logits_x, targets=l_in, output_ulb=logits_y, weight_l_ce=FLAGS.weight_l_ce, p_cls_ema=p_in, 
-                step=self.step, upper=FLAGS.upper)
-            update_p = tf.add(0.99*p_in, 0.01*p_each_cls)
-
+        loss_xe = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels_x, logits=logits_x)
         loss_xe = tf.reduce_mean(loss_xe)
-
         loss_l2u = tf.square(labels_y - tf.nn.softmax(logits_y))
         loss_l2u = tf.reduce_mean(loss_l2u)
         tf.summary.scalar('losses/xe', loss_xe)
@@ -126,9 +115,6 @@ class MixMatch(models.MultiModel):
         # L2 regularization
         loss_wd = sum(tf.nn.l2_loss(v) for v in utils.model_vars('classify') if 'kernel' in v.name)
         tf.summary.scalar('losses/wd', loss_wd)
-
-        for i in range(self.dataset.nclass):
-            tf.summary.scalar('losses/p_cls_'+str(i), update_p[i])
 
         ema = tf.train.ExponentialMovingAverage(decay=ema)
         ema_op = ema.apply(utils.model_vars())
@@ -141,54 +127,9 @@ class MixMatch(models.MultiModel):
             train_op = tf.group(*post_ops)
 
         return EasyDict(
-            xt=xt_in, x=x_in, y=y_in, label=l_in, p_cls_ema=p_in, train_op=train_op, update_p=update_p,
+            xt=xt_in, x=x_in, y=y_in, label=l_in, train_op=train_op,
             classify_raw=tf.nn.softmax(classifier(x_in, training=False)),  # No EMA, for debugging.
             classify_op=tf.nn.softmax(classifier(x_in, getter=ema_getter, training=False)))
-
-
-def log_softmax(x):
-    xdev = x - tf.reduce_max(x, axis=1, keepdims=True)
-    return xdev - tf.log(tf.reduce_sum(tf.exp(xdev), axis=1, keepdims=True))
-
-
-def categorical_crossentropy_logdomain(log_predictions, targets):
-    return -tf.reduce_sum(targets * log_predictions, axis=1)
- 
-
-def weighted_ce_loss(output_lb, targets, output_ulb, weight_l_ce, p_cls_ema=None, step=0, upper=10.0):
-    """
-    wrapper for cross entropy loss in pytorch.
-    
-    Args
-        logits: logit values, shape=[Batch size, # of classes]
-        targets: integer or vector, shape=[Batch size] or [Batch size, # of classes]
-        use_hard_labels: If True, targets have [Batch size] shape with int values. If False, the target is vector (default True)
-    """
-    probability_batch=tf.nn.softmax(output_ulb)
-    p_each_cls = tf.reduce_mean(probability_batch, 0)
-    p_each_cls_ori = tf.stop_gradient(p_each_cls) 
-    if weight_l_ce >= 4:
-        probability_batch_inv = tf.linalg.pinv(tf.stop_gradient(probability_batch))
-        bs_weight = tf.matmul(tf.expand_dims(p_cls_ema,0), probability_batch_inv)
-        bs_weight = tf.clip_by_value(bs_weight, clip_value_min=0.0, clip_value_max=upper)  
-        p_each_cls = tf.matmul(bs_weight, probability_batch)
-    target_one_hot = tf.zeros_like(output_lb)
-    target_one_hot = tf.one_hot(indices=targets, depth=output_lb.get_shape()[1], on_value=1.0, off_value=0.0, axis=1, dtype=tf.float32)
-    p_each_cls = tf.squeeze(p_each_cls)
-
-    py = tf.reduce_sum(tf.multiply(target_one_hot, tf.expand_dims(p_each_cls, 0)), axis=-1) 
-    px = tf.ones(tf.shape(targets)[0])
-    n_class = tf.cast(tf.shape(targets)[0],  dtype=tf.float32)
-    y_weight = n_class * (px/py)/tf.reduce_sum((px/py))
-    
-    y_weight = tf.expand_dims(y_weight, 1)
-
-    if weight_l_ce == 2:
-        y_weight = tf.stop_gradient(y_weight)
-    log_P = log_softmax(output_lb) + tf.log(y_weight)
-    ce_loss = categorical_crossentropy_logdomain(log_P, target_one_hot)
-    return ce_loss, p_each_cls_ori
-    # return ce_loss, tf.stop_gradient(p_each_cls) 
 
 
 def main(argv):
@@ -209,9 +150,6 @@ def main(argv):
         beta=FLAGS.beta,
         w_match=FLAGS.w_match,
 
-        weight_l_ce=FLAGS.weight_l_ce,
-        weight_ulb=FLAGS.weight_ulb,
-
         scales=FLAGS.scales or (log_width - 2),
         filters=FLAGS.filters,
         repeat=FLAGS.repeat)
@@ -231,13 +169,5 @@ if __name__ == '__main__':
     FLAGS.set_default('dataset', 'cifar10.3@250-5000')
     FLAGS.set_default('batch', 64)
     FLAGS.set_default('lr', 0.03)
-    FLAGS.set_default('train_kimg', 1 << 13)
-
-    flags.DEFINE_integer('weight_l_ce', 0, 'weighted ce loss.')
-    flags.DEFINE_integer('devicenum', 1, 'number of device')
-    flags.DEFINE_integer('weight_ulb', 0, 'weighted threshold for unlabeled data')
-    flags.DEFINE_float('upper', 10.0, 'upper for the matrix inversion')
-
-    flags.DEFINE_integer('db', 0, 'doubly robust.')
-
+    FLAGS.set_default('train_kimg', 1 << 16)
     app.run(main)

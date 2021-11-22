@@ -51,9 +51,6 @@ def main(argv):
         use_dm=FLAGS.use_dm,
         use_xe=FLAGS.use_xe,
         warmup_kimg=FLAGS.warmup_kimg,
-        
-        weight_l_ce=FLAGS.weight_l_ce,
-        weight_ulb=FLAGS.weight_ulb,
 
         scales=FLAGS.scales or (log_width - 2),
         filters=FLAGS.filters,
@@ -79,11 +76,5 @@ if __name__ == '__main__':
     FLAGS.set_default('dataset', 'cifar10.3@250-5000')
     FLAGS.set_default('batch', 64)
     FLAGS.set_default('lr', 0.002)
-    FLAGS.set_default('train_kimg', 1 << 13)
-    flags.DEFINE_integer('weight_l_ce', 0, 'weighted ce loss.')
-    flags.DEFINE_integer('devicenum', 1, 'number of device')
-    flags.DEFINE_integer('weight_ulb', 0, 'weighted threshold for unlabeled data')
-    flags.DEFINE_float('upper', 10.0, 'upper for the matrix inversion')
-
-    flags.DEFINE_integer('db', 0, 'doubly robust.')
+    FLAGS.set_default('train_kimg', 1 << 16)
     app.run(main)

@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -262,17 +262,6 @@ class ClassifySemi(Model):
                 predicted.append(p)
             predicted = np.concatenate(predicted, axis=0)
             predicted_label = predicted.argmax(1)
-            predicted_confidence = predicted.max(1)
-
-            if subset == 'valid':
-                vaild_info = dict()
-                vaild_info['labels'] = labels
-                vaild_info['condience'] = predicted_confidence
-                vaild_info['predict'] = predicted_label
-                import json
-                with open("/gruntdata2/xinting/project/tf_fixmatch/experiments/fixmatch/cifar10_LT_50.d.d.d.1@50-50000/CTAugment_depth2_th0.80_decay0.990/FixMatch_archresnet_batch64_confidence0.95_db0_devicenum1_filters32_lr0.03_nclass10_repeat4_scales3_train_kimg8192_upper10.0_uratio7_wd0.0005_weight_l_ce0_weight_ulb0_wu1.0/prediction.json","w") as f:
-                    json.dump(vaild_info, f)
-                import pdb; pdb.set_trace() 
 
             del predicted
             

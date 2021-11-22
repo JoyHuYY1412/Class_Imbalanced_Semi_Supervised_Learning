@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2019 Google LLC
+
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ def main(argv):
         np.random.seed(FLAGS.seed)
         for i in range(nclass):
             np.random.shuffle(class_id[i])
-    if ('LT' in argv[0]) or ('BT' in argv[0]):
+    if 'LT' in argv[0]:
         print('train_stats', train_stats)
         e = np.arange(nclass*1.0) / (nclass - 1.0)
         base = np.ones_like(e, np.float64) * 1.0/FLAGS.lamda
@@ -108,28 +108,6 @@ def main(argv):
         c = np.argmax(train_stats - npos / max(npos.max(), 1))
         label.append(class_id[c][npos[c]])
         npos[c] += 1
-
-    for i in range(nclass):
-        print('len(npos)', npos[i])
-
-    if 'RS' in argv[0]:
-        max_len = npos[0]
-        label = []
-        n_pos_all = [[] for _ in range(nclass)]
-        n_pos_all[0] = [i for i in range(npos[0])]
-        label.extend(class_id[0][n_pos_all[0]])
-
-        for i in range(1, nclass):
-            times = int(max_len/npos[i])
-            remain = max_len % npos[i]
-            ori = [j for j in range(npos[i])]
-            n_pos_all[i] = ori*times + ori[:remain]
-            npos[i] = len(n_pos_all[i])
-            label.extend(class_id[i][n_pos_all[i]])
-        print('after')
-
-        for i in range(nclass):
-            print('len(npos)', npos[i])
 
     del npos, class_id
     # label = frozenset([int(x) for x in label])
