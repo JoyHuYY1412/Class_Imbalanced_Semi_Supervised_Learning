@@ -1,4 +1,4 @@
-# Imbalanced Semi-supervised Classification 
+# Class-Imbalanced Semi-Supervised Learning (ICLR2022)
 
 Code for the paper: "[On Non-Random Missing Labels in Semi-Supervised Learning]()" by 
 Xinting Hu, Yulei Niu, Chunyan Miao, Xian-Sheng Hua, Hanwang Zhang
