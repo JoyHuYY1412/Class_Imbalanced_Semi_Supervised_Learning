@@ -1,4 +1,4 @@
-# CADR_FiXMatch
+# Imbalanced Semi-supervised Classification 
 
 Code for the paper: "[On Non-Random Missing Labels in Semi-Supervised Learning]()" by 
 Xinting Hu, Yulei Niu, Chunyan Miao, Xian-Sheng Hua, Hanwang Zhang
