@@ -207,13 +207,13 @@ has a different # of classes than 10 and different resolution and # of channels 
 5. In `libml/augment.py` add your dataset to the `DEFAULT_AUGMENT` variable. Primitives "s", "m", "ms" represent mirror, shift and mirror+shift. 
 
 ## Citing this work
-
-<!-- ```bibtex
-@article{sohn2020fixmatch,
-    title={FixMatch: Simplifying Semi-Supervised Learning with Consistency and Confidence},
-    author={Kihyuk Sohn and David Berthelot and Chun-Liang Li and Zizhao Zhang and Nicholas Carlini and Ekin D. Cubuk and Alex Kurakin and Han Zhang and Colin Raffel},
-    journal={arXiv preprint arXiv:2001.07685},
-    year={2020},
+```
+@inproceedings{
+hu2022on,
+title={On Non-Random Missing Labels in Semi-Supervised Learning},
+author={Xinting Hu and Yulei Niu and Chunyan Miao and Xian-Sheng Hua and Hanwang Zhang},
+booktitle={International Conference on Learning Representations},
+year={2022},
+url={https://openreview.net/forum?id=6yVvwR9H9Oj}
 }
 ```
- -->
